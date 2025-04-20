@@ -22,17 +22,17 @@ A basic 2D top-down shooter game created using HTML5 Canvas and plain JavaScript
 
 ## How to Run Locally
 
-1.  **Download or Clone:** Download the `index.html` file (or clone this repository).
+1.  **Download or Clone:** Download the `!DOCTYPE html.html` file (or clone this repository).
     ```bash
     git clone <your-repository-url>
     cd <repository-folder>
     ```
-2.  **Open in Browser:** Open the `index.html` file directly in your preferred web browser (e.g., Chrome, Firefox, Safari, Edge). No web server is needed.
+2.  **Open in Browser:** Open the `!DOCTYPE html.html` file directly in your preferred web browser (e.g., Chrome, Firefox, Safari, Edge). No web server is needed.
 
 
 ## Customization
 
-Feel free to modify the source code (`index.html`) to:
+Feel free to modify the source code (`!DOCTYPE html.html`) to:
 * Adjust game parameters like player speed, bullet speed, enemy speed, spawn rates, etc.
 * Change the appearance (colors, shapes) of the player, bullets, and enemies.
 * Add sound effects for shooting, hitting enemies, or game over.
