@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Simple Shooter Game</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+            font-family: sans-serif;
+        }
+        canvas {
+            border: 1px solid black;
+            background-color: #000; /* Black background */
+        }
+        #scoreDisplay, #controls, #gameOver {
+            margin-top: 10px;
+            font-size: 1.1em;
+        }
+         #gameOver {
+            color: red;
+            font-weight: bold;
+            display: none; /* Hidden initially */
+         }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas" width="480" height="640"></canvas>
+    <div id="scoreDisplay">Score: 0</div>
+    <div id="controls">Controls: ← → to Move, Space to Shoot</div>
+    <div id="gameOver">GAME OVER! Reload to Retry</div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreDisplay = document.getElementById('scoreDisplay');
+        const gameOverDisplay = document.getElementById('gameOver');
+
+        let score = 0;
+        let gameOver = false;
+
+        // Player object
+        const player = {
+            x: canvas.width / 2 - 25,
+            y: canvas.height - 60,
+            width: 50,
+            height: 30,
+            color: 'lime', // Bright green color
+            speed: 5,
+            dx: 0 // Horizontal movement direction
+        };
+
+        // Bullets array
+        const bullets = [];
+        const bulletSpeed = 7;
+        const bulletCooldown = 15; // Frames between shots
+        let bulletTimer = 0;
+
+        // Enemies array
+        const enemies = [];
+        const enemySpeed = 2;
+        const enemySpawnRate = 60; // Frames between enemy spawns
+        let enemyTimer = 0;
+
+        // Key input state
+        const keys = {};
+
+        // Event listeners for key presses
+        document.addEventListener('keydown', (e) => {
+            keys[e.code] = true;
+        });
+
+        document.addEventListener('keyup', (e) => {
+            keys[e.code] = false;
+        });
+
+        // --- Drawing functions ---
+
+        // Draws the player triangle
+        function drawPlayer() {
+            ctx.fillStyle = player.color;
+            ctx.beginPath();
+            ctx.moveTo(player.x + player.width / 2, player.y);
+            ctx.lineTo(player.x, player.y + player.height);
+            ctx.lineTo(player.x + player.width, player.y + player.height);
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        // Draws all active bullets
+        function drawBullets() {
+            ctx.fillStyle = 'yellow';
+            bullets.forEach(bullet => {
+                ctx.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
+            });
+        }
+
+        // Draws all active enemies
+        function drawEnemies() {
+            ctx.fillStyle = 'red'; // Red enemies
+            enemies.forEach(enemy => {
+                ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
+            });
+        }
+
+        // Updates the score display on the page
+        function drawScore() {
+            scoreDisplay.textContent = `Score: ${score}`;
+        }
+
+        // Displays the game over message
+        function drawGameOver() {
+            if (gameOver) {
+               gameOverDisplay.style.display = 'block'; // Show game over text
+            }
+        }
+
+        // --- Update functions ---
+
+        // Handles player movement based on key input
+        function updatePlayer() {
+            player.dx = 0;
+            if (keys['ArrowLeft'] && player.x > 0) {
+                player.dx = -player.speed;
+            }
+            if (keys['ArrowRight'] && player.x < canvas.width - player.width) {
+                player.dx = player.speed;
+            }
+            player.x += player.dx;
+        }
+
+        // Handles bullet creation and movement
+        function updateBullets() {
+            // Shoot bullet
+            bulletTimer--;
+            if (keys['Space'] && bulletTimer <= 0) {
+                bullets.push({
+                    x: player.x + player.width / 2 - 2.5, // Fire from center
+                    y: player.y,
+                    width: 5,
+                    height: 10,
+                    speed: bulletSpeed
+                });
+                bulletTimer = bulletCooldown; // Reset cooldown timer
+            }
+
+            // Move bullets and remove if off-screen
+            for (let i = bullets.length - 1; i >= 0; i--) {
+                bullets[i].y -= bullets[i].speed;
+                if (bullets[i].y < 0) {
+                    bullets.splice(i, 1); // Remove bullet if it goes off the top
+                }
+            }
+        }
+
+        // Handles enemy spawning and movement
+        function updateEnemies() {
+            // Spawn enemies
+            enemyTimer--;
+            if (enemyTimer <= 0) {
+                const size = 30;
+                const x = Math.random() * (canvas.width - size); // Random X position
+                enemies.push({
+                    x: x,
+                    y: -size, // Spawn above the screen
+                    width: size,
+                    height: size,
+                    speed: enemySpeed + Math.random() * 1 // Slight random speed variation
+                });
+                enemyTimer = enemySpawnRate; // Reset spawn timer
+            }
+
+            // Move enemies and remove if off-screen
+            for (let i = enemies.length - 1; i >= 0; i--) {
+                enemies[i].y += enemies[i].speed;
+                if (enemies[i].y > canvas.height) {
+                    enemies.splice(i, 1); // Remove enemy if it goes off the bottom
+                }
+            }
+        }
+
+        // Checks for collisions between bullets/enemies and player/enemies
+        function checkCollisions() {
+            // Bullet vs Enemy collision
+            for (let i = bullets.length - 1; i >= 0; i--) {
+                for (let j = enemies.length - 1; j >= 0; j--) {
+                    const b = bullets[i];
+                    const e = enemies[j];
+                    // Basic AABB collision check
+                    if (b && e &&
+                        b.x < e.x + e.width &&
+                        b.x + b.width > e.x &&
+                        b.y < e.y + e.height &&
+                        b.y + b.height > e.y)
+                    {
+                        bullets.splice(i, 1); // Remove bullet
+                        enemies.splice(j, 1); // Remove enemy
+                        score += 10; // Increase score
+                        break; // Exit inner loop (bullet can only hit one enemy)
+                    }
+                }
+            }
+
+            // Enemy vs Player collision
+            for (let i = enemies.length - 1; i >= 0; i--) {
+                 const e = enemies[i];
+                 if (player.x < e.x + e.width &&
+                     player.x + player.width > e.x &&
+                     player.y < e.y + e.height &&
+                     player.y + player.height > e.y)
+                 {
+                    gameOver = true; // Set game over flag
+                    break; // No need to check other enemies
+                 }
+            }
+        }
+
+        // --- Game Loop ---
+        function gameLoop() {
+            if (gameOver) {
+                drawGameOver(); // Display game over message and stop the loop
+                return;
+            }
+
+            // Clear the canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Update game state
+            updatePlayer();
+            updateBullets();
+            updateEnemies();
+            checkCollisions();
+
+            // Draw everything
+            drawPlayer();
+            drawBullets();
+            drawEnemies();
+            drawScore();
+
+            // Request the next frame
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Start the game loop
+        gameLoop();
+
+    </script>
+</body>
+</html>
